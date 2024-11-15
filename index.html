@@ -3,17 +3,139 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Free PNG Search</title>
+    <title>Image Search</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 20px auto;
+            padding: 20px;
+            text-align: center;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        input[type="text"] {
+            width: 80%;
+            padding: 8px;
+            font-size: 16px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+        }
+
+        button {
+            padding: 10px 15px;
+            font-size: 16px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        .error {
+            color: red;
+            font-size: 16px;
+            margin-top: 10px;
+        }
+
+        .results {
+            margin-top: 20px;
+            display: grid;
+            grid-template-columns: repeat(3, 200px);
+            gap: 20px;
+            justify-content: center;
+        }
+
+        .result-item {
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        img {
+            width: 200px;
+            height: 200px;
+            object-fit: contain; /* Ensures the image fits without being cut off */
+            border: 1px solid lightgray;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+
+        img:hover {
+            opacity: 0.8;
+        }
+
+    </style>
 </head>
 <body>
-    <h1>Search for PNG Images</h1>
-    <form id="search-form" action="/search" method="post">
-        <input type="text" name="query" placeholder="Enter keyword (e.g., 'tank')" required>
-        <button type="submit">Search</button>
-    </form>
 
-    <div id="image-grid">
-        <!-- Images will be displayed here -->
+    <div class="container">
+        <h1>Search Images</h1>
+        <input type="text" id="searchInput" placeholder="Search images">
+        <button id="searchButton">Search</button>
+        <div class="error" id="errorMessage"></div>
+
+        <div class="results" id="resultsContainer"></div>
     </div>
+
+    <script>
+        const searchButton = document.getElementById('searchButton');
+        const searchInput = document.getElementById('searchInput');
+        const errorMessage = document.getElementById('errorMessage');
+        const resultsContainer = document.getElementById('resultsContainer');
+
+        searchButton.addEventListener('click', function() {
+            const query = searchInput.value.trim();
+
+            if (!query) {
+                errorMessage.textContent = 'Please enter a search term.';
+                resultsContainer.innerHTML = ''; // Clear previous results
+                return;
+            }
+
+            errorMessage.textContent = ''; // Clear any previous error message
+            resultsContainer.innerHTML = ''; // Clear previous results
+
+            fetch(`http://127.0.0.1:5001/search?q=${encodeURIComponent(query)}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        errorMessage.textContent = data.error;
+                    } else {
+                        data.forEach(item => {
+                            const imgElement = document.createElement('img');
+                            imgElement.src = `http://127.0.0.1:5001/images/${item.url}`;
+                            imgElement.alt = item.title;
+                            imgElement.addEventListener('click', () => {
+                                const link = document.createElement('a');
+                                link.href = imgElement.src;
+                                link.download = item.url;
+                                link.click();
+                            });
+
+                            const resultItem = document.createElement('div');
+                            resultItem.classList.add('result-item');
+                            resultItem.appendChild(imgElement);
+                            resultsContainer.appendChild(resultItem);
+                        });
+                    }
+                })
+                .catch(() => {
+                    errorMessage.textContent = 'Error: Server not found or issue with request';
+                });
+        });
+    </script>
+    
 </body>
 </html>
